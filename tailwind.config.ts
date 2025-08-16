@@ -1,0 +1,228 @@
+import type { Config } from "tailwindcss";
+import { TAILWIND_COLORS } from "./src/lib/config/colors";
+
+const config: Config = {
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "class",
+  theme: {
+    screens: {
+      xs: "475px",
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
+    },
+    extend: {
+      colors: {
+        ...TAILWIND_COLORS,
+
+        primary: {
+          DEFAULT: "var(--homey-primary)",
+          bright: "var(--homey-primary-bright)",
+          dark: "var(--homey-primary-dark)",
+        },
+
+        // Glass system - now using CSS variables
+        glass: {
+          DEFAULT: "var(--homey-glass-bg)",
+          border: "var(--homey-glass-border)",
+          violet: "var(--homey-glass-violet)",
+          subtle: "var(--homey-glass-bg)",
+          strong: "var(--homey-glass-bg)",
+        },
+
+        text: {
+          DEFAULT: "var(--homey-text)",
+          secondary: "var(--homey-text-secondary)",
+          muted: "var(--homey-text-muted)",
+        },
+
+        // Dynamic surface colors based on theme
+        surface: {
+          1: "var(--surface-1)",
+          2: "var(--surface-2)",
+          3: "var(--surface-3)",
+          violet: "var(--homey-glass-violet)",
+        },
+      },
+
+      spacing: {
+        "safe-top": "env(safe-area-inset-top)",
+        "safe-bottom": "env(safe-area-inset-bottom)",
+        "safe-left": "env(safe-area-inset-left)",
+        "safe-right": "env(safe-area-inset-right)",
+      },
+
+      backdropBlur: {
+        xs: "2px",
+        glass: "16px",
+        "glass-heavy": "24px",
+        "3xl": "64px",
+      },
+
+      borderRadius: {
+        glass: "1rem",
+        "glass-lg": "1.25rem",
+        "glass-xl": "1.5rem",
+        "glass-2xl": "2rem",
+      },
+
+      boxShadow: {
+        glass: "0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--homey-glass-border)",
+        "glass-lg": "0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--homey-glass-border)",
+        "glass-violet": "0 8px 32px var(--homey-glass-violet), 0 0 0 1px var(--homey-glass-violet)",
+        "glass-hover": "0 20px 40px rgba(0, 0, 0, 0.25), 0 0 60px var(--homey-glass-violet)",
+
+        "glass-inset": "inset 0 1px 0 var(--surface-1), inset 0 -1px 0 var(--surface-1)",
+        "glass-inset-lg": "inset 0 2px 0 var(--surface-2), inset 0 -2px 0 var(--surface-1)",
+
+        mobile: "0 4px 16px rgba(0, 0, 0, 0.15)",
+        "3xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+      },
+
+      animation: {
+        "fade-in": "fadeIn 0.3s ease-out",
+        "slide-up": "slideUp 0.3s ease-out",
+        "scale-in": "scaleIn 0.2s ease-out",
+        "glass-shimmer": "glassShimmer 2s ease-in-out infinite",
+        "violet-glow": "violetGlow 3s ease-in-out infinite alternate",
+        float: "float 6s ease-in-out infinite",
+      },
+
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        slideUp: {
+          "0%": { transform: "translateY(20px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        scaleIn: {
+          "0%": { transform: "scale(0.95)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        glassShimmer: {
+          "0%, 100%": { backgroundPosition: "-200% 0" },
+          "50%": { backgroundPosition: "200% 0" },
+        },
+        violetGlow: {
+          "0%": { boxShadow: "0 0 20px var(--homey-glass-violet)" },
+          "100%": { boxShadow: "0 0 40px var(--homey-glass-violet)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+      },
+
+      typography: {
+        DEFAULT: {
+          css: {
+            "--tw-prose-body": "var(--homey-text-secondary)",
+            "--tw-prose-headings": "var(--homey-text)",
+          },
+        },
+      },
+    },
+  },
+  plugins: [
+    require("@tailwindcss/forms"),
+    require("@tailwindcss/typography"),
+    require("@tailwindcss/aspect-ratio"),
+
+    function ({ addUtilities, theme }: { addUtilities: any; theme: any }) {
+      const newUtilities = {
+        // Mobile optimizations
+        ".touch-manipulation": {
+          "touch-action": "manipulation",
+        },
+        ".scrollbar-none": {
+          "scrollbar-width": "none",
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
+        },
+
+        // Safe area support
+        ".safe-area-inset": {
+          "padding-top": "env(safe-area-inset-top)",
+          "padding-bottom": "env(safe-area-inset-bottom)",
+          "padding-left": "env(safe-area-inset-left)",
+          "padding-right": "env(safe-area-inset-right)",
+        },
+
+        // Glass utilities - NOW FULLY DYNAMIC
+        ".glass-card": {
+          background: "var(--homey-glass-bg)",
+          "backdrop-filter": "blur(16px)",
+          "-webkit-backdrop-filter": "blur(16px)",
+          border: "1px solid var(--homey-glass-border)",
+          "box-shadow": theme("boxShadow.glass"),
+          "border-radius": theme("borderRadius.glass"),
+          transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+          transform: "translateZ(0)",
+        },
+
+        ".glass-card-hover": {
+          "&:hover": {
+            transform: "scale(1.02) translateY(-4px) translateZ(0)",
+            "box-shadow": theme("boxShadow.glass-hover"),
+            "border-color": "var(--homey-glass-violet)",
+            filter: "drop-shadow(0 0 20px var(--surface-2))",
+          },
+        },
+
+        ".glass-button": {
+          background: "var(--homey-glass-violet)",
+          "backdrop-filter": "blur(12px)",
+          "-webkit-backdrop-filter": "blur(12px)",
+          border: "1px solid var(--homey-glass-violet)",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            background: "var(--homey-primary)",
+            "border-color": "var(--homey-primary)",
+            transform: "translateY(-2px) scale(1.05)",
+            "box-shadow": "0 10px 25px var(--homey-glass-violet)",
+          },
+        },
+
+        // DYNAMIC glass input - changes based on theme
+        ".glass-input": {
+          background: "var(--glass-input-bg)",
+          "backdrop-filter": "blur(12px)",
+          "-webkit-backdrop-filter": "blur(12px)",
+          border: "1px solid var(--homey-glass-border)",
+          transition: "all 0.3s ease",
+          "&:focus": {
+            outline: "none",
+            "border-color": "var(--homey-primary)",
+            "box-shadow": "0 0 0 3px var(--homey-glass-violet), 0 8px 25px var(--homey-glass-violet)",
+          },
+          "&::placeholder": {
+            color: "var(--homey-text-muted)",
+          },
+        },
+
+        // Text utilities
+        ".text-glass": {
+          color: "var(--homey-text)",
+          "text-shadow": "var(--text-shadow)",
+        },
+
+        ".text-glass-secondary": {
+          color: "var(--homey-text-secondary)",
+          "text-shadow": "var(--text-shadow-light)",
+        },
+
+        ".text-glass-muted": {
+          color: "var(--homey-text-muted)",
+        },
+      };
+      addUtilities(newUtilities);
+    },
+  ],
+};
+
+export default config;
