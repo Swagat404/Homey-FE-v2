@@ -572,213 +572,99 @@ const Dashboard: React.FC<DashboardProps> = ({ isDark, toggleTheme, onNavigate }
         initial="hidden"
         animate="visible"
       >
-        {/* Welcome Section - Enhanced */}
+        {/* Compact Mobile-Friendly Header */}
         <motion.section 
           variants={itemVariants}
-          animate={{
-            y: [0, -2, 0],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+          className="mb-4"
         >
-          <ModernCard variant="glass" className="relative overflow-hidden glass-card-premium border border-purple-200/30 dark:border-purple-700/30 shadow-xl shadow-purple-500/10">
-            {/* Subtle background accent */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-violet-500/10 rounded-full blur-3xl transform translate-x-16 -translate-y-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-500/8 to-indigo-500/8 rounded-full blur-2xl transform -translate-x-12 translate-y-12"></div>
-            
-            <div className="relative flex items-start justify-between">
-              <div className="flex-1">
-                {/* Enhanced welcome message with staggered character animation */}
-                <motion.div className="mb-3">
-                  <motion.h2 
-                    className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 dark:from-white dark:via-purple-200 dark:to-white bg-clip-text text-transparent mb-1 leading-tight"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    {(() => {
-                      const hour = new Date().getHours();
-                      if (hour < 12) return "Good morning";
-                      if (hour < 17) return "Good afternoon"; 
-                      return "Good evening";
-                    })()}, {mockData.user.name}!
-                  </motion.h2>
-                      <motion.div
-                    className="text-4xl"
-                    initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    transition={{ delay: 0.5, type: "spring", stiffness: 400, damping: 15 }}
-                  >
-                    👋
-                      </motion.div>
-                </motion.div>
-
-                {/* Enhanced apartment info with better typography */}
-          <motion.div
-                  className="space-y-2"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-500 to-violet-500 animate-pulse"></div>
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 tracking-wide">
-                      {mockData.apartment.name}
-              </h3>
-            </div>
-
-          <motion.div
-                    className="flex items-center gap-4 text-gray-600 dark:text-gray-400"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      <span className="font-medium">{mockData.apartment.roommates} roommates</span>
-              </div>
-                    <div className="w-1 h-1 rounded-full bg-gray-400"></div>
-                    <div className="flex items-center gap-1.5">
-                      <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span className="font-medium">{mockData.apartment.address}</span>
-            </div>
-                  </motion.div>
-          </motion.div>
-
-                {/* Quick status indicators */}
-          <motion.div
-                  className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-200/50 dark:border-gray-700/50"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                >
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-xs font-semibold">Online</span>
-              </div>
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-xs font-semibold">Active now</span>
-            </div>
-          </motion.div>
-              </div>
-
-              {/* Enhanced User Avatar Section */}
-          <motion.div
-                className="flex flex-col items-center gap-3"
-                initial={{ opacity: 0, scale: 0.8, x: 20 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                transition={{ delay: 0.7, type: "spring", stiffness: 400, damping: 20 }}
+          <div className="flex items-center justify-between px-1">
+            {/* Minimal Welcome */}
+            <div className="flex items-center gap-3">
+              <motion.div
+                className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 15 }}
               >
-                {/* Avatar with enhanced styling */}
-                <motion.div className="relative">
-                  {/* Glow ring around avatar */}
-                  <motion.div 
-                    className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400/40 to-violet-500/40 blur-md"
-                    animate={{ 
-                      scale: [1, 1.1, 1],
-                      opacity: [0.5, 0.8, 0.5] 
-                    }}
-                    transition={{ 
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                  />
-                  
-                  {/* Main avatar */}
-                  <motion.div
-                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 via-purple-500 to-violet-600 flex items-center justify-center text-white font-bold text-xl shadow-2xl border-3 border-white/20"
-                    whileHover={{ 
-                      scale: 1.1, 
-                      rotate: 5,
-                      boxShadow: "0 25px 50px rgba(139, 92, 246, 0.5)",
-                      y: -2
-                    }}
-              whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                  >
-                    {mockData.user.avatar}
-                    
-                    {/* Online status indicator */}
-                  <motion.div 
-                      className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-lg"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 1, type: "spring", stiffness: 500 }}
-                    >
-                      <motion.div 
-                        className="w-full h-full rounded-full bg-green-400"
-                        animate={{ 
-                          scale: [1, 1.2, 1],
-                          opacity: [1, 0.7, 1] 
-                        }}
-                        transition={{ 
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      />
-                  </motion.div>
-                  </motion.div>
-                </motion.div>
-
-                {/* User role/status badge */}
-                  <motion.div 
-                  className="px-3 py-1 rounded-full bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/30 dark:to-violet-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold border border-purple-200/50 dark:border-purple-700/50 shadow-sm"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9, type: "spring", stiffness: 300 }}
+                {mockData.user.avatar}
+                <motion.div 
+                  className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring", stiffness: 500 }}
+                />
+              </motion.div>
+              
+              <div>
+                <motion.h2 
+                  className="text-xl font-bold text-gray-900 dark:text-white"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
                 >
-                  Tenant
+                  {(() => {
+                    const hour = new Date().getHours();
+                    if (hour < 12) return "Good morning";
+                    if (hour < 17) return "Good afternoon"; 
+                    return "Good evening";
+                  })()}, {mockData.user.name.split(' ')[0]}!
+                </motion.h2>
+                <motion.div
+                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                  <span>{mockData.apartment.name}</span>
+                  <div className="w-1 h-1 rounded-full bg-gray-400"></div>
+                  <span>{mockData.apartment.roommates} roommates</span>
                 </motion.div>
-                  </motion.div>
               </div>
+            </div>
 
-            {/* Subtle Background decoration */}
+            {/* Compact Action Buttons */}
+            <div className="flex items-center gap-2">
+              {mockData.notifications > 0 && (
+                <motion.button
+                  onClick={() => setShowNotifications(true)}
+                  className="relative p-2 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 dark:border-gray-700/50"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <IconBell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   <motion.div 
-              className="absolute top-0 right-0 w-64 h-64 -translate-y-32 translate-x-32"
-              animate={{ 
-                y: [0, -5, 0],
-                opacity: [0.8, 1, 0.8],
-              }}
-              transition={{ 
-                duration: 8,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-400/10 to-violet-500/10 blur-3xl" />
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.6, type: "spring", stiffness: 500 }}
+                  >
+                    <span className="text-white text-xs font-bold">{mockData.notifications}</span>
                   </motion.div>
-            
-            {/* Shimmer overlay effect - less frequent */}
-                  <motion.div 
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
-              initial={{ x: "-100%" }}
-              animate={{ x: "100%" }}
-              transition={{ 
-                duration: 4,
-                repeat: Infinity,
-                repeatDelay: 8,
-                ease: "easeInOut"
-              }}
-            />
-          </ModernCard>
+                </motion.button>
+              )}
+              
+              <motion.button
+                onClick={handleAddNew}
+                className="p-2 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg"
+                whileHover={{ scale: 1.05, boxShadow: "0 8px 25px rgba(139, 92, 246, 0.3)" }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <IconPlus className="w-5 h-5" />
+              </motion.button>
+            </div>
+          </div>
         </motion.section>
 
         {/* Stats Grid - Now Clickable with personalized filters */}
         <motion.section variants={itemVariants}>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 particle-trail">
+          <div className="grid grid-cols-2 gap-4 particle-trail">
           <motion.div
               onClick={() => handleStatNavigation("tasks", "myPending")} 
               className="cursor-pointer"

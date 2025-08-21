@@ -12,6 +12,9 @@ import AnnouncementsPage from "./components/AnnouncementsPage";
 import SettingsPage from "./components/SettingsPage";
 import BottomNavigation from "./components/BottomNavigation";
 import FloatingElements from "./components/layout/FloatingElements";
+import AuthPage from "./components/AuthPage";
+import { AuthProvider, useAuth } from "./lib/contexts/AuthContext";
+import { checkBackendHealth } from "./lib/api/client";
 import "./index.css";
 
 // Create QueryClient instance
@@ -89,10 +92,11 @@ const AppLoader = () => {
   );
 };
 
-// Root App Component with all providers
-const App: React.FC = () => {
+// Main App Content Component (after authentication)
+const AppContent: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   const toggleTheme = () => {
     const newDarkMode = !isDark;
@@ -133,53 +137,98 @@ const App: React.FC = () => {
     initializeTheme();
   }, [applyTheme]);
 
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <AppLoader />
+      </div>
+    );
+  }
+
+  // Show auth page if not authenticated
+  if (!isAuthenticated) {
+    return <AuthPage isDark={isDark} />;
+  }
+
+  // Show main app content if authenticated
+  return (
+    <div className={`app min-h-screen ${isDark ? "dark" : ""}`}>
+      {/* Main Content Container */}
+      <div className="pb-20 min-h-screen">
+        {currentPage === "dashboard" && (
+          <Dashboard 
+            isDark={isDark} 
+            toggleTheme={toggleTheme} 
+            onNavigate={navigateToPage}
+          />
+        )}
+        
+        {currentPage === "tasks" && (
+          <TasksPage 
+            isDark={isDark} 
+            onBack={navigateBack}
+          />
+        )}
+        
+        {currentPage === "expenses" && (
+          <ExpensesPage 
+            isDark={isDark} 
+            onBack={navigateBack}
+          />
+        )}
+        
+        {currentPage === "announcements" && (
+          <AnnouncementsPage 
+            isDark={isDark} 
+            onBack={navigateBack}
+          />
+        )}
+
+        {currentPage === "settings" && (
+          <SettingsPage 
+            isDark={isDark} 
+            onBack={navigateBack}
+            toggleTheme={toggleTheme}
+          />
+        )}
+      </div>
+      
+      {/* Bottom Navigation */}
+      <BottomNavigation
+        currentPage={currentPage}
+        onNavigate={navigateToPage}
+        isDark={isDark}
+      />
+    </div>
+  );
+};
+
+// Root App Component with all providers
+const App: React.FC = () => {
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      const isHealthy = await checkBackendHealth();
+      setBackendStatus(isHealthy ? 'online' : 'offline');
+    };
+    
+    checkBackend();
+  }, []);
+
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className={`app ${isDark ? "dark" : ""}`}>
-        <QueryClientProvider client={queryClient}>
-          {currentPage === "dashboard" && (
-            <Dashboard 
-              isDark={isDark} 
-              toggleTheme={toggleTheme} 
-              onNavigate={navigateToPage}
-            />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          {/* Backend Status Indicator */}
+          {backendStatus === 'offline' && (
+            <div className="fixed top-0 left-0 right-0 z-50 bg-red-500 text-white text-center p-2 text-sm">
+              ⚠️ Backend is offline. Please ensure the server is running on localhost:8000
+            </div>
           )}
           
-          {currentPage === "tasks" && (
-            <TasksPage 
-              isDark={isDark} 
-              onBack={navigateBack}
-            />
-          )}
-          
-          {currentPage === "expenses" && (
-            <ExpensesPage 
-              isDark={isDark} 
-              onBack={navigateBack}
-            />
-          )}
-          
-          {currentPage === "announcements" && (
-            <AnnouncementsPage 
-              isDark={isDark} 
-              onBack={navigateBack}
-            />
-          )}
-
-          {currentPage === "settings" && (
-            <SettingsPage 
-              isDark={isDark} 
-              onBack={navigateBack}
-              toggleTheme={toggleTheme}
-            />
-          )}
-          
-          {/* Bottom Navigation */}
-          <BottomNavigation
-            currentPage={currentPage}
-            onNavigate={navigateToPage}
-            isDark={isDark}
-            />
+          <AppContent />
           
           {/* Enhanced Toast Notifications with preserved styling */}
           <Toaster
@@ -227,8 +276,8 @@ const App: React.FC = () => {
               },
             }}
           />
-        </QueryClientProvider>
-      </div>
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 };

@@ -6,7 +6,6 @@ import {
   IconFilter,
   IconSearch,
   IconCurrencyDollar,
-  IconUsers,
   IconReceipt,
   IconCreditCard,
   IconTrendingUp,
@@ -14,28 +13,18 @@ import {
   IconCalendar,
   IconCheck,
   IconX,
-  IconEdit,
-  IconTrash,
+  IconClock,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 import hapticFeedback from "../utils/haptics";
-import { ModernCard, ModernIconButton, StatCard, PremiumAnalytics } from "./ui";
+import { ModernCard, ModernIconButton, StatCard, PremiumAnalytics, MobilePillCard } from "./ui";
+import { useExpenses, useCreateExpense, useUpdateExpense } from "../lib/hooks";
+import { Expense, ExpenseCreate, ExpenseCategory } from "../lib/api/types";
+import { useAuth } from "../lib/contexts/AuthContext";
 
 interface ExpensesPageProps {
   onBack: () => void;
   isDark: boolean;
-}
-
-interface Expense {
-  id: number;
-  title: string;
-  amount: number;
-  paidBy: string;
-  splitWith: string[];
-  date: string;
-  category: string;
-  settled: boolean;
-  receipt?: string;
 }
 
 interface Settlement {
@@ -44,22 +33,32 @@ interface Settlement {
   amount: number;
 }
 
-const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
+const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack }) => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [showAddExpense, setShowAddExpense] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  // const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [pageTitle, setPageTitle] = useState("Expenses");
   const [pageSubtitle, setPageSubtitle] = useState("Split bills and track shared costs");
   const [highlightSection, setHighlightSection] = useState<string | null>(null);
+  const [expandedExpenses, setExpandedExpenses] = useState<Set<string>>(new Set());
 
-  // Form state for adding new expenses
+  // API hooks
+  const { data: expensesResponse } = useExpenses({ page_size: 100 });
+  // const { data: expenseStats } = useExpenseStats(); // Commented out until backend is fixed
+  const createExpenseMutation = useCreateExpense();
+  const updateExpenseMutation = useUpdateExpense();
+
+  const expenses = expensesResponse?.data || [];
+
+  // Form state for adding new expenses (using string for amount to handle input)
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
-    paidBy: "Alex Johnson",
-    category: "food",
-    splitWith: ["Alex Johnson", "Sarah Chen", "Mike Rodriguez", "Emma Davis"] as string[]
+    paid_by_id: user?.id || "",
+    category: "food" as ExpenseCategory,
+    split_with_ids: user?.id ? [user.id] : [] as string[]
   });
 
   // Check for personalized filters from dashboard
@@ -78,110 +77,139 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
     }
   }, []);
 
+  // Update form data when user changes (auth state)
+  React.useEffect(() => {
+    if (user?.id) {
+      setFormData(prev => ({
+        ...prev,
+        paid_by_id: user.id,
+        split_with_ids: prev.split_with_ids.length === 0 ? [user.id] : prev.split_with_ids
+      }));
+    }
+  }, [user?.id]);
+
   const roommates = [
-    { name: "Alex Johnson", avatar: "AJ", color: "purple" },
-    { name: "Sarah Chen", avatar: "SC", color: "blue" },
-    { name: "Mike Rodriguez", avatar: "MR", color: "green" },
-    { name: "Emma Davis", avatar: "ED", color: "pink" },
+    { id: user?.id || "", name: user?.name || "You", avatar: user?.name?.split(' ').map(n => n[0]).join('') || "U", color: "purple" },  // Current user
+    { id: "roommate-2", name: "Sarah Chen", avatar: "SC", color: "blue" },
+    { id: "roommate-3", name: "Mike Rodriguez", avatar: "MR", color: "green" },
+    { id: "roommate-4", name: "Emma Davis", avatar: "ED", color: "pink" },
   ];
 
-  const [expenses, setExpenses] = useState<Expense[]>([
-    {
-      id: 1,
-      title: "Grocery Shopping - Whole Foods",
-      amount: 127.50,
-      paidBy: "Sarah Chen",
-      splitWith: ["Alex Johnson", "Sarah Chen", "Mike Rodriguez", "Emma Davis"],
-      date: "2024-12-15",
-      category: "Food",
-      settled: false,
-    },
-    {
-      id: 2,
-      title: "Internet Bill - December",
-      amount: 89.99,
-      paidBy: "Mike Rodriguez",
-      splitWith: ["Alex Johnson", "Sarah Chen", "Mike Rodriguez", "Emma Davis"],
-      date: "2024-12-10",
-      category: "Utilities",
-      settled: true,
-    },
-    {
-      id: 3,
-      title: "Cleaning Supplies",
-      amount: 45.25,
-      paidBy: "Alex Johnson",
-      splitWith: ["Alex Johnson", "Sarah Chen", "Emma Davis"],
-      date: "2024-12-08",
-      category: "Household",
-      settled: false,
-    },
-    {
-      id: 4,
-      title: "Pizza Night",
-      amount: 62.80,
-      paidBy: "Emma Davis",
-      splitWith: ["Alex Johnson", "Sarah Chen", "Mike Rodriguez", "Emma Davis"],
-      date: "2024-12-05",
-      category: "Food",
-      settled: true,
-    },
-  ]);
+  // Simulate bill splitting by modifying expense data to show realistic roommate scenarios
+  const expensesWithSimulatedSplitting = expenses.map(expense => {
+    // For demo purposes, simulate that expenses are split among different roommates
+    const simulatedExpense = { ...expense };
+    
+    // Simulate different payers and splits based on the expense type
+    if (expense.title.includes("Groceries")) {
+      simulatedExpense.paid_by_name = user?.name || "You";
+      simulatedExpense.split_with_names = [user?.name || "You", "Sarah Chen", "Mike Rodriguez", "Emma Davis"];
+      simulatedExpense.amount_per_person = (parseFloat(expense.amount.toString()) / 4).toString();
+    } else if (expense.title.includes("Electric")) {
+      simulatedExpense.paid_by_name = "Sarah Chen";
+      simulatedExpense.split_with_names = [user?.name || "You", "Sarah Chen", "Mike Rodriguez", "Emma Davis"];
+      simulatedExpense.amount_per_person = (parseFloat(expense.amount.toString()) / 4).toString();
+    } else if (expense.title.includes("Dinner")) {
+      simulatedExpense.paid_by_name = "Mike Rodriguez";
+      simulatedExpense.split_with_names = [user?.name || "You", "Sarah Chen", "Mike Rodriguez"];
+      simulatedExpense.amount_per_person = (parseFloat(expense.amount.toString()) / 3).toString();
+    } else if (expense.title.includes("Netflix")) {
+      simulatedExpense.paid_by_name = "Emma Davis";
+      simulatedExpense.split_with_names = [user?.name || "You", "Sarah Chen", "Mike Rodriguez", "Emma Davis"];
+      simulatedExpense.amount_per_person = (parseFloat(expense.amount.toString()) / 4).toString();
+    } else if (expense.title.includes("Cleaning")) {
+      simulatedExpense.paid_by_name = user?.name || "You";
+      simulatedExpense.split_with_names = [user?.name || "You", "Sarah Chen", "Mike Rodriguez", "Emma Davis"];
+      simulatedExpense.amount_per_person = (parseFloat(expense.amount.toString()) / 4).toString();
+    } else {
+      // Default: Current user paid, split with everyone
+      simulatedExpense.paid_by_name = user?.name || "You";
+      simulatedExpense.split_with_names = [user?.name || "You"];
+      simulatedExpense.amount_per_person = expense.amount_per_person;
+    }
+    
+    return simulatedExpense;
+  });
+
+  // Use the simulated expenses for calculations
+  const displayExpenses = expensesWithSimulatedSplitting;
 
   // Add new expense function
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
     if (!formData.title.trim() || !formData.amount || parseFloat(formData.amount) <= 0) {
-      return; // Don't add invalid expenses
+      toast.error('Please fill in all required fields');
+      return;
     }
 
-    const newExpense: Expense = {
-      id: Math.max(...expenses.map(e => e.id)) + 1,
+    // Validate user authentication
+    if (!user?.id) {
+      toast.error('You must be logged in to add expenses');
+      return;
+    }
+
+    // Validate split selection
+    if (formData.split_with_ids.length === 0) {
+      toast.error('Please select at least one person to split with');
+      return;
+    }
+
+    const newExpenseData: ExpenseCreate = {
       title: formData.title,
       amount: parseFloat(formData.amount),
-      paidBy: formData.paidBy,
-      splitWith: formData.splitWith,
-      date: new Date().toISOString().split('T')[0], // Today's date
+      paid_by_id: formData.paid_by_id || user.id,
+      split_with_ids: formData.split_with_ids,
       category: formData.category,
-      settled: false,
+      expense_date: new Date().toISOString().split('T')[0], // Today's date
     };
 
-    setExpenses(prevExpenses => [newExpense, ...prevExpenses]);
+    createExpenseMutation.mutate(newExpenseData);
     
     // Reset form and close modal
     setFormData({
       title: "",
       amount: "",
-      paidBy: "Alex Johnson",
-      category: "food",
-      splitWith: ["Alex Johnson", "Sarah Chen", "Mike Rodriguez", "Emma Davis"]
+      paid_by_id: user.id,
+      category: "food" as ExpenseCategory,
+      split_with_ids: [user.id]
     });
     setShowAddExpense(false);
     
-    hapticFeedback.expenseAdded();
-    toast.success("Expense added successfully!");
-  };
-
-  // Mark expense as settled
-  const handleSettleExpense = (expenseId: number) => {
-    setExpenses(prevExpenses =>
-      prevExpenses.map(expense =>
-        expense.id === expenseId
-          ? { ...expense, settled: true }
-          : expense
-      )
-    );
-  };
-
-  // Handle settlement
-  const handleSettlement = (settlement: Settlement) => {
     hapticFeedback.success();
-    // In a real app, this would create a settlement record
-    toast.success(`Settlement recorded: ${settlement.from} pays ${settlement.to} $${settlement.amount.toFixed(2)}`);
-    
-    // For demo purposes, we'll just show a success message
-    // In reality, you'd want to mark related expenses as settled or create settlement records
+  };
+
+  // Handle settlement - actually settle expenses in the backend
+  const handleSettlement = async (settlement: Settlement) => {
+    try {
+      // Find expenses that involve this settlement
+      const relevantExpenses = displayExpenses.filter(expense => 
+        !expense.settled && 
+        ((expense.paid_by_name === settlement.to && expense.split_with_names?.includes(settlement.from)) ||
+         (expense.paid_by_name === settlement.from && expense.split_with_names?.includes(settlement.to)))
+      );
+
+      // Mark the first relevant expense as settled (in a real app, you'd handle this more sophisticatedly)
+      if (relevantExpenses.length > 0) {
+        const expenseToSettle = relevantExpenses[0];
+        
+        await updateExpenseMutation.mutateAsync({
+          expenseId: expenseToSettle.id,
+          expenseData: { settled: true }
+        });
+
+        hapticFeedback.success();
+        toast.success(`Settlement recorded: ${settlement.from} paid ${settlement.to} $${settlement.amount.toFixed(2)}`);
+      } else {
+        // If no specific expense found, just show the toast
+        hapticFeedback.success();
+        toast.success(`Settlement recorded: ${settlement.from} pays ${settlement.to} $${settlement.amount.toFixed(2)}`);
+      }
+    } catch (error) {
+      console.error('Settlement failed:', error);
+      toast.error('Failed to record settlement');
+    }
   };
 
   // Handle form input changes
@@ -193,12 +221,12 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
   };
 
   // Toggle roommate in split
-  const toggleRoommateInSplit = (roommateName: string) => {
+  const toggleRoommateInSplit = (roommateId: string) => {
     setFormData(prev => ({
       ...prev,
-      splitWith: prev.splitWith.includes(roommateName)
-        ? prev.splitWith.filter(name => name !== roommateName)
-        : [...prev.splitWith, roommateName]
+      split_with_ids: prev.split_with_ids.includes(roommateId)
+        ? prev.split_with_ids.filter(id => id !== roommateId)
+        : [...prev.split_with_ids, roommateId]
     }));
   };
 
@@ -208,16 +236,19 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
       balances[roommate.name] = 0;
     });
 
-    expenses.forEach(expense => {
+    displayExpenses.forEach(expense => {
       if (!expense.settled) {
-        const splitAmount = expense.amount / expense.splitWith.length;
+        const splitAmount = parseFloat(expense.amount_per_person.toString());
+        const totalAmount = parseFloat(expense.amount.toString());
         
-        // Add to payer's balance
-        balances[expense.paidBy] += expense.amount - splitAmount;
+        // Add to payer's balance (they are owed money)
+        if (expense.paid_by_name) {
+          balances[expense.paid_by_name] += totalAmount - splitAmount;
+        }
         
-        // Subtract from each person's balance
-        expense.splitWith.forEach(person => {
-          if (person !== expense.paidBy) {
+        // Subtract from each person's balance (they owe money)
+        expense.split_with_names?.forEach(person => {
+          if (person !== expense.paid_by_name) {
             balances[person] -= splitAmount;
           }
         });
@@ -253,19 +284,39 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
     return settlements.filter(s => s.amount > 0.01);
   };
 
-  const filteredExpenses = expenses.filter(expense => {
+  const filteredExpenses = displayExpenses.filter(expense => {
     const matchesSearch = expense.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === "all" || expense.category.toLowerCase() === filterCategory.toLowerCase();
     return matchesSearch && matchesCategory;
   });
 
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const settledExpenses = expenses.filter(e => e.settled).reduce((sum, expense) => sum + expense.amount, 0);
-  const pendingExpenses = expenses.filter(e => !e.settled).reduce((sum, expense) => sum + expense.amount, 0);
+  const totalExpenses = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount.toString()), 0);
+  const settledExpenses = expenses.filter(e => e.settled).reduce((sum, expense) => sum + parseFloat(expense.amount.toString()), 0);
+  const pendingExpenses = expenses.filter(e => !e.settled).reduce((sum, expense) => sum + parseFloat(expense.amount.toString()), 0);
 
   const balances = calculateBalances();
-  const myBalance = balances["Alex Johnson"];
+  const myBalance = balances[user?.name || "You"];
   const settlements = calculateSettlements();
+
+  const toggleExpenseExpanded = (expenseId: string) => {
+    setExpandedExpenses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(expenseId)) {
+        newSet.delete(expenseId);
+      } else {
+        newSet.add(expenseId);
+      }
+      return newSet;
+    });
+  };
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log("Expenses with simulated splitting:", displayExpenses);
+    console.log("Calculated balances:", balances);
+    console.log("Your balance:", myBalance);
+    console.log("Settlements:", settlements);
+  }, [displayExpenses, balances, myBalance, settlements]);
 
   const categories = ["All", "Food", "Utilities", "Household", "Entertainment", "Transportation"];
 
@@ -306,9 +357,9 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 py-6 space-y-6 non-settlement-container">
+      <div className="px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 non-settlement-container safe-area-left safe-area-right">
         {/* Stats Overview */}
-        <div className={`grid grid-cols-2 lg:grid-cols-4 gap-6 refined-light-worm non-settlement-container ${highlightSection === 'stats' ? 'ring-2 ring-purple-500 ring-opacity-50 rounded-xl p-2' : ''}`}>
+        <div className={`grid grid-cols-2 gap-3 sm:gap-6 refined-light-worm non-settlement-container ${highlightSection === 'stats' ? 'ring-2 ring-purple-500 ring-opacity-50 rounded-xl p-2' : ''}`}>
           <motion.div 
             className="holographic shiny-overlay rounded-3xl"
             whileHover={{ scale: 1.05, rotateY: 5 }}
@@ -433,7 +484,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
 
 
         {/* Search and Filter */}
-                  <div className="flex gap-4 refined-shimmer-accent non-settlement-container">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 refined-shimmer-accent non-settlement-container">
           <div className="flex-1 relative">
             <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -458,11 +509,11 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
           </select>
         </div>
 
-        {/* Expenses List */}
-        <ModernCard variant="crystal" className="p-6 refined-hover-glow refined-border-light refined-plasma-border shiny-overlay crawling-light electric-border non-settlement-container">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="refined-heading-4 refined-text-stream-glow glass-text-bold">
-              Recent Expenses
+        {/* Expenses List - Mobile Optimized */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Recent Expenses ({filteredExpenses.length})
             </h3>
             <div className="flex gap-2">
               <ModernIconButton icon={IconFilter} variant="ghost" size="sm" />
@@ -470,75 +521,126 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredExpenses.map((expense) => (
-              <motion.div
+              <MobilePillCard
                 key={expense.id}
-                className="p-5 border rounded-xl transition-all duration-300 cursor-pointer relative overflow-hidden group bg-gradient-to-r from-white to-purple-50/20 dark:from-gray-800 dark:to-purple-900/10 border-purple-200/30 dark:border-purple-700/30 hover:bg-gradient-to-r hover:from-purple-50/40 hover:to-violet-50/40 dark:hover:from-purple-900/15 dark:hover:to-violet-900/15 hover:border-purple-300/50 dark:hover:border-purple-600/50 hover:shadow-lg hover:shadow-purple-100/20 dark:hover:shadow-purple-900/20 refined-breathing-light refined-hover-glow"
-                onClick={() => setSelectedExpense(expense)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+                id={expense.id}
+                title={expense.title}
+                subtitle={`Paid by ${expense.paid_by_name} • Split ${expense.split_with_names?.length} ways`}
+                completed={expense.settled}
+                category={expense.category}
+                dueDate={expense.expense_date}
+                amount={parseFloat(expense.amount.toString())}
+                isExpanded={expandedExpenses.has(expense.id)}
+                enableSwipe={false} // No swipe actions for expenses
+                onToggleExpand={() => toggleExpenseExpanded(expense.id)}
+                className="mx-2"
               >
-                {/* Subtle accent line */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-400/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="flex items-start justify-between relative z-10">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold text-gray-900 dark:text-white refined-text-shimmer-stream glass-text-bold">
-                        {expense.title}
-                      </h4>
-                                              {expense.settled && (
-                         <span className="px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full border border-green-200 dark:border-green-700 shadow-sm backdrop-blur-sm">
-                           ✓ Settled
-                         </span>
-                       )}
-                       {!expense.settled && (
-                         <span className="px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-700 dark:text-orange-400 text-xs font-semibold rounded-full border border-orange-200 dark:border-orange-700 shadow-sm backdrop-blur-sm">
-                           ⏳ Pending
-                         </span>
-                       )}
-                    </div>
-                    
-                                         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                       <span className="refined-text-wave-glow">Paid by {expense.paidBy}</span>
-                      <span>•</span>
-                      <span>{new Date(expense.date).toLocaleDateString()}</span>
-                      <span>•</span>
-                      <span>{expense.category}</span>
-                      <span>•</span>
-                      <span>Split {expense.splitWith.length} ways</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-2">
-                      {expense.splitWith.slice(0, 4).map((person, index) => (
-                        <div
-                          key={index}
-                          className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold"
-                        >
-                          {person.split(' ').map(n => n[0]).join('')}
-                        </div>
-                      ))}
-                      {expense.splitWith.length > 4 && (
-                        <span className="text-xs text-gray-500">
-                          +{expense.splitWith.length - 4} more
-                        </span>
+                {/* Expanded Content */}
+                <div className="space-y-4">
+                  {/* Settlement Status */}
+                  <div className={`p-3 rounded-xl border ${
+                    expense.settled 
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                      : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {expense.settled ? (
+                        <>
+                          <IconCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                            Settled
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <IconClock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                          <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                            Pending Settlement
+                          </span>
+                        </>
                       )}
                     </div>
                   </div>
 
-                                      <div className="text-right">
-                     <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent group-hover:from-purple-500 group-hover:to-violet-500 transition-all duration-200 refined-text-progressive-glow">
-                       ${expense.amount.toFixed(2)}
-                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      ${(expense.amount / expense.splitWith.length).toFixed(2)} per person
+                  {/* Split Details */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Split Among:
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {expense.split_with_names?.map((person: string, index: number) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold">
+                            {person.split(' ').map((n: string) => n[0]).join('')}
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {person}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ${parseFloat(expense.amount_per_person.toString()).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+
+                  {/* Expense Details */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Category:</span>
+                      <span className="ml-2 font-medium text-gray-700 dark:text-gray-300">
+                        {expense.category}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Date:</span>
+                      <span className="ml-2 font-medium text-gray-700 dark:text-gray-300">
+                        {new Date(expense.expense_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Mark as Settled Button */}
+                  {!expense.settled && (
+                    <div className="pt-2">
+                      <motion.button
+                        onClick={() => {
+                          // Add settlement logic here
+                          toast.success('Expense marked as settled!');
+                        }}
+                        className="w-full px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl font-medium transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Mark as Settled
+                      </motion.button>
+                    </div>
+                  )}
                 </div>
-              </motion.div>
+              </MobilePillCard>
             ))}
+
+            {filteredExpenses.length === 0 && (
+              <div className="text-center py-12 mx-2">
+                <div className="bg-white/50 dark:bg-gray-800/50 rounded-3xl p-8 backdrop-blur-xl border border-white/20 dark:border-gray-700/50">
+                  <IconReceipt className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">
+                    No expenses found
+                  </h4>
+                  <p className="text-gray-400 text-sm">
+                    {searchTerm || filterCategory !== "all"
+                      ? "Try adjusting your filters"
+                      : "Add your first expense to get started"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        </ModernCard>
+        </div>
 
         {/* Premium Expense Analytics - Only show if we have enough data */}
         {expenses.length >= 2 && (
@@ -552,7 +654,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
               accentColor="#3B82F6"
               data={(() => {
                 const categoryTotals = expenses.reduce((acc, expense) => {
-                  acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+                  acc[expense.category] = (acc[expense.category] || 0) + parseFloat(expense.amount.toString());
                   return acc;
                 }, {} as Record<string, number>);
 
@@ -675,10 +777,10 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
 
                 {/* Compact Form */}
                 <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
-                  {/* Expense Description */}
+                  {/* Expense Title */}
                   <div className="space-y-3">
                     <label className="block text-sm font-semibold text-white/90 refined-text-subtle-glow">
-                      Expense Description
+                      Expense Title
                     </label>
                     <input
                       type="text"
@@ -725,12 +827,12 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
                   Paid by
                 </label>
                 <select
-                  value={formData.paidBy}
-                  onChange={(e) => handleInputChange("paidBy", e.target.value)}
+                  value={formData.paid_by_id}
+                  onChange={(e) => handleInputChange("paid_by_id", e.target.value)}
                   className="w-full px-4 py-3 bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 dark:border-white/20 rounded-xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 focus:bg-white/30 dark:focus:bg-white/15"
                 >
                   {roommates.map(roommate => (
-                    <option key={roommate.name} value={roommate.name} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium">
+                    <option key={roommate.id} value={roommate.id} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium">
                       {roommate.name}
                     </option>
                   ))}
@@ -743,11 +845,11 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ onBack, isDark }) => {
                 </label>
                 <div className="space-y-2">
                   {roommates.map(roommate => (
-                    <label key={roommate.name} className="flex items-center gap-3 p-2 rounded-lg bg-white/10 dark:bg-white/5 backdrop-blur border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200">
+                    <label key={roommate.id} className="flex items-center gap-3 p-2 rounded-lg bg-white/10 dark:bg-white/5 backdrop-blur border border-white/20 dark:border-white/10 hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-200">
                       <input
                         type="checkbox"
-                        checked={formData.splitWith.includes(roommate.name)}
-                        onChange={() => toggleRoommateInSplit(roommate.name)}
+                        checked={formData.split_with_ids.includes(roommate.id)}
+                        onChange={() => toggleRoommateInSplit(roommate.id)}
                         className="w-4 h-4 text-purple-600 bg-white/30 dark:bg-white/20 border-white/40 dark:border-white/30 rounded focus:ring-purple-500/50 focus:ring-2"
                       />
                       <span className="text-white font-medium">

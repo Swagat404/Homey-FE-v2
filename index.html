@@ -3,10 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- Enhanced Mobile Web App -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Homey" />
+    <meta name="application-name" content="Homey" />
+    <meta name="theme-color" content="#8B5CF6" />
+    <meta name="msapplication-navbutton-color" content="#8B5CF6" />
+    <meta name="msapplication-TileColor" content="#8B5CF6" />
+    
+    <!-- Prevent bounce scrolling on iOS -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    
+    <!-- Favicon and touch icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
     <title>Homey - Household Management</title>
+    
+    <!-- Prevent text size adjust on iOS -->
+    <style>
+      html { -webkit-text-size-adjust: 100%; }
+      body { 
+        overscroll-behavior: none; 
+        -webkit-overflow-scrolling: touch;
+        touch-action: manipulation;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

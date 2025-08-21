@@ -13,6 +13,7 @@ import '@fontsource/geist-sans/700.css';
 
 import App from "./App";
 import "./index.css";
+import "./styles/mobile.css";
 
 // Service Worker registration for PWA
 if ("serviceWorker" in navigator && import.meta.env.PROD) {

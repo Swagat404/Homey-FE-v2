@@ -21,6 +21,7 @@ export { StatCard } from './StatCard';
 export { default as CelebrationSystem } from './CelebrationSystem';
 export { default as InteractiveCharts } from './InteractiveCharts';
 export { default as PremiumAnalytics } from './PremiumAnalytics';
+export { default as MobilePillCard } from './MobilePillCard';
 
 // Export all types
 export type * from './types';
